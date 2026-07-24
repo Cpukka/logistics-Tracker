@@ -1,0 +1,456 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+  // No output specified - uses default location: node_modules/.prisma/client
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// USERS & AUTH
+// ============================================
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  password         String?
+  name             String
+  role             UserRole  @default(CUSTOMER)
+  avatar           String?
+  phone            String?
+  companyId        String?
+  company          Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  emailVerified    Boolean   @default(false)
+  twoFactorEnabled Boolean   @default(false)
+  lastLogin        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  shipments     Shipment[]
+  driver        Driver?
+  notifications Notification[]
+  activities    Activity[]
+  sessions      Session[]
+}
+
+enum UserRole {
+  ADMIN
+  DISPATCHER
+  DRIVER
+  CUSTOMER
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// COMPANIES
+// ============================================
+model Company {
+  id         String   @id @default(cuid())
+  name       String
+  email      String?
+  phone      String?
+  address    String?
+  city       String?
+  state      String?
+  country    String?
+  postalCode String?
+  logo       String?
+  website    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations - ALL opposite relations defined here
+  users     User[]
+  shipments Shipment[]
+  drivers   Driver[]
+  vehicles  Vehicle[] // Opposite of Vehicle.company
+  payments  Payment[] // Opposite of Payment.company
+  settings  CompanySettings?
+}
+
+model CompanySettings {
+  id              String   @id @default(cuid())
+  companyId       String   @unique
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  defaultCurrency String   @default("USD")
+  timezone        String   @default("America/New_York")
+  language        String   @default("en")
+  theme           String   @default("dark")
+  autoAssign      Boolean  @default(false)
+  notifications   Json?    @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ============================================
+// SHIPMENTS
+// ============================================
+model Shipment {
+  id             String         @id @default(cuid())
+  trackingNumber String         @unique
+  userId         String
+  companyId      String
+  status         ShipmentStatus @default(PENDING)
+  priority       Priority       @default(MEDIUM)
+
+  // Origin
+  originAddress String
+  originCity    String
+  originState   String?
+  originCountry String
+  originLat     Float?
+  originLng     Float?
+
+  // Destination
+  destinationAddress String
+  destinationCity    String
+  destinationState   String?
+  destinationCountry String
+  destinationLat     Float?
+  destinationLng     Float?
+
+  // Package
+  packageType       String
+  packageWeight     Float
+  packageDimensions Json?
+  packageContents   String?
+  declaredValue     Float?
+  isFragile         Boolean @default(false)
+  isHazardous       Boolean @default(false)
+
+  // Customer
+  customerName  String
+  customerPhone String?
+  customerEmail String?
+  customerNotes String?
+
+  // Delivery
+  estimatedDelivery DateTime?
+  actualDelivery    DateTime?
+  scheduledPickup   DateTime?
+  pickupNotes       String?
+  deliveryNotes     String?
+
+  // Driver
+  driverId String?
+
+  // Route
+  routeId String?
+
+  // Financial
+  shippingCost  Float         @default(0)
+  insuranceCost Float         @default(0)
+  totalCost     Float         @default(0)
+  currency      String        @default("USD")
+  paymentStatus PaymentStatus @default(PENDING)
+
+  // Tracking
+  currentLocation String?
+  currentLat      Float?
+  currentLng      Float?
+
+  // Metadata
+  metadata  Json?    @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations - ALL relations defined here
+  user           User            @relation(fields: [userId], references: [id])
+  company        Company         @relation(fields: [companyId], references: [id])
+  driver         Driver?         @relation(fields: [driverId], references: [id])
+  route          Route?          @relation(fields: [routeId], references: [id])
+  trackingEvents TrackingEvent[]
+  payments       Payment[] // Opposite of Payment.shipment
+}
+
+enum ShipmentStatus {
+  PENDING
+  LABEL_CREATED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  EXCEPTION
+  RETURNED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// ============================================
+// TRACKING EVENTS
+// ============================================
+model TrackingEvent {
+  id          String         @id @default(cuid())
+  shipmentId  String
+  status      ShipmentStatus
+  location    String
+  description String
+  latitude    Float?
+  longitude   Float?
+  metadata    Json?          @default("{}")
+  createdAt   DateTime       @default(now())
+
+  // Relations
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// DRIVERS
+// ============================================
+model Driver {
+  id               String       @id @default(cuid())
+  userId           String       @unique
+  companyId        String
+  licenseNumber    String
+  licenseExpiry    DateTime
+  phone            String
+  emergencyContact String?
+  vehicleId        String?
+  status           DriverStatus @default(AVAILABLE)
+  currentLat       Float?
+  currentLng       Float?
+  currentLocation  String?
+  rating           Float        @default(0)
+  totalDeliveries  Int          @default(0)
+  totalDistance    Float        @default(0)
+  lastActive       DateTime?
+  isActive         Boolean      @default(true)
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company         Company            @relation(fields: [companyId], references: [id])
+  vehicle         Vehicle?           @relation(fields: [vehicleId], references: [id])
+  shipments       Shipment[]
+  routes          Route[]
+  driverLocations DriverLocation[]
+  performance     DriverPerformance?
+}
+
+enum DriverStatus {
+  AVAILABLE
+  ON_DUTY
+  DELIVERING
+  ON_BREAK
+  OFF_DUTY
+}
+
+model DriverPerformance {
+  id                  String   @id @default(cuid())
+  driverId            String   @unique
+  completedDeliveries Int      @default(0)
+  onTimeRate          Float    @default(0)
+  averageRating       Float    @default(0)
+  totalDistance       Float    @default(0)
+  fuelEfficiency      Float?
+  safetyScore         Float?
+  month               String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+}
+
+model DriverLocation {
+  id        String   @id @default(cuid())
+  driverId  String
+  latitude  Float
+  longitude Float
+  address   String?
+  speed     Float?
+  heading   Float?
+  timestamp DateTime @default(now())
+
+  // Relations
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// VEHICLES
+// ============================================
+model Vehicle {
+  id                 String        @id @default(cuid())
+  licensePlate       String        @unique
+  companyId          String
+  type               VehicleType   @default(VAN)
+  model              String
+  year               Int
+  capacity           Float
+  color              String?
+  fuelType           FuelType      @default(GASOLINE)
+  insuranceNumber    String?
+  insuranceExpiry    DateTime?
+  registrationExpiry DateTime?
+  status             VehicleStatus @default(AVAILABLE)
+  lastMaintenance    DateTime?
+  nextMaintenance    DateTime?
+  notes              String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  // Relations
+  company Company  @relation(fields: [companyId], references: [id])
+  drivers Driver[]
+  routes  Route[]
+}
+
+enum VehicleType {
+  VAN
+  TRUCK
+  MOTORCYCLE
+  CAR
+  SEMI_TRUCK
+  REFRIGERATED_VAN
+  BOX_TRUCK
+}
+
+enum FuelType {
+  GASOLINE
+  DIESEL
+  ELECTRIC
+  HYBRID
+  CNG
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+// ============================================
+// ROUTES
+// ============================================
+model Route {
+  id            String      @id @default(cuid())
+  name          String
+  description   String?
+  driverId      String
+  vehicleId     String
+  shipmentIds   String[]
+  waypoints     Json?
+  startLocation String
+  startLat      Float
+  startLng      Float
+  endLocation   String
+  endLat        Float
+  endLng        Float
+  distance      Float       @default(0)
+  estimatedTime Float       @default(0)
+  actualTime    Float?
+  startTime     DateTime?
+  endTime       DateTime?
+  status        RouteStatus @default(PLANNED)
+  isOptimized   Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  driver    Driver     @relation(fields: [driverId], references: [id])
+  vehicle   Vehicle    @relation(fields: [vehicleId], references: [id])
+  shipments Shipment[]
+}
+
+enum RouteStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?            @default("{}")
+  read      Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum NotificationType {
+  SHIPMENT_UPDATE
+  DELIVERY_CONFIRMATION
+  DRIVER_UPDATE
+  SYSTEM_ALERT
+  PAYMENT_CONFIRMATION
+  GENERAL
+}
+
+// ============================================
+// ACTIVITIES
+// ============================================
+model Activity {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  details    Json?    @default("{}")
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// PAYMENTS
+// ============================================
+model Payment {
+  id            String        @id @default(cuid())
+  shipmentId    String
+  companyId     String?
+  amount        Float
+  currency      String        @default("USD")
+  status        PaymentStatus @default(PENDING)
+  paymentMethod String
+  transactionId String?
+  receiptUrl    String?
+  metadata      Json?         @default("{}")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  company  Company? @relation(fields: [companyId], references: [id])
+}
