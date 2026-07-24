@@ -1,6 +1,6 @@
 // app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/db'
+import prisma from '../../../lib/db'
 import { hash } from 'bcryptjs'
 import { sign } from 'jsonwebtoken'
 
@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     })
@@ -33,8 +34,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Hash password
     const hashedPassword = await hash(password, 10)
 
+    // Create user
     const user = await prisma.user.create({
       data: {
         name,
@@ -45,12 +48,14 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Generate JWT
     const token = sign(
       { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     )
 
+    // Return user without password
     const { password: _, ...userWithoutPassword } = user
 
     return NextResponse.json({

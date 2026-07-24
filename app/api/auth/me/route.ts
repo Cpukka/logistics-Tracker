@@ -1,7 +1,7 @@
 // app/api/auth/me/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
-import prisma from '@/lib/db'
+import prisma from '../../../lib/db'
 
 export async function GET(request: NextRequest) {
   try {

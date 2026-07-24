@@ -1,5 +1,5 @@
+// components/tracking/TrackingDetails.tsx
 import { TrackingStatus } from '../../types/tracking';
-
 import { 
   CheckCircle, 
   Package, 
@@ -15,7 +15,7 @@ interface TrackingDetailsProps {
   status: TrackingStatus;
   estimatedDelivery: string;
   lastUpdate: string;
-   currentLocation: string | Location; // Updated
+  currentLocation: string;
   serviceLevel?: string;
 }
 
@@ -108,9 +108,9 @@ export default function TrackingDetails({
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               Last updated: {new Date(lastUpdate).toLocaleString()}
             </p>
-            <p className="font-medium text-gray-800 dark:text-gray-200">
-  {formatLocation(currentLocation)}
-</p>
+            <p className="font-medium text-gray-800 dark:text-gray-200 mt-1">
+              {currentLocation}
+            </p>
           </div>
         </div>
       </div>
@@ -156,7 +156,7 @@ export default function TrackingDetails({
           </div>
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-linear-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500"
               style={{ width: '65%' }}
             ></div>
           </div>

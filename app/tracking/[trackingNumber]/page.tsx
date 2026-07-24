@@ -1,3 +1,4 @@
+// app/tracking/[trackingNumber]/page.tsx
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import TrackingDetails from '../../components/tracking/TrackingDetails';
@@ -6,8 +7,8 @@ import TrackingMap from '../../components/tracking/TrackingMap';
 import PackageInfo from '../../components/tracking/PackageInfo';
 import ActionButtons from '../../components/tracking/ActionButtons';
 import { fetchTrackingDetails } from '../../lib/api/tracking';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import TrackingHeader from '../../components/tracking/TrackingHeader';
+import { Location } from '../../types';
 
 interface TrackingPageProps {
   params: {
@@ -17,6 +18,21 @@ interface TrackingPageProps {
     ref?: string;
     view?: string;
   };
+}
+
+// Helper function to format location
+function formatLocation(location: string | Location): string {
+  if (typeof location === 'string') {
+    return location;
+  }
+  if (location && typeof location === 'object') {
+    const parts = [];
+    if (location.city) parts.push(location.city);
+    if (location.state) parts.push(location.state);
+    if (location.country) parts.push(location.country);
+    return parts.join(', ') || location.address || 'Unknown Location';
+  }
+  return 'Unknown Location';
 }
 
 export default async function TrackingPage({ 
@@ -33,7 +49,7 @@ export default async function TrackingPage({
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <Suspense fallback={<TrackingSkeleton />}>
           <TrackingContent 
@@ -63,6 +79,9 @@ async function TrackingContent({
       notFound();
     }
 
+    // Format the current location for display
+    const currentLocationDisplay = formatLocation(trackingData.currentLocation);
+
     return (
       <>
         <TrackingHeader 
@@ -80,7 +99,7 @@ async function TrackingContent({
                 status={trackingData.status}
                 estimatedDelivery={trackingData.estimatedDelivery}
                 lastUpdate={trackingData.lastUpdate}
-                currentLocation={trackingData.currentLocation}
+                currentLocation={currentLocationDisplay}
                 serviceLevel={trackingData.serviceLevel}
               />
             </div>

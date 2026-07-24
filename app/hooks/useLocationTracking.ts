@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useCallback } from 'react'
-import { useWebSocket } from '@/components/providers/WebSocketProvider'
+import { useWebSocket } from '../components/providers/WebSocketProvider'
 
 export function useLocationTracking(driverId?: string) {
-  const { subscribe, unsubscribe, sendMessage, isConnected } = useWebSocket()
+  const { sendMessage, isConnected, connectionStatus } = useWebSocket()
 
   const sendLocationUpdate = useCallback((location: {
     lat: number
@@ -14,10 +14,13 @@ export function useLocationTracking(driverId?: string) {
     bearing?: number
   }) => {
     if (driverId && isConnected) {
-      sendMessage('location_update', {
-        driverId,
-        location,
-        timestamp: new Date().toISOString()
+      sendMessage({
+        type: 'location_update',
+        data: {
+          driverId,
+          location,
+          timestamp: new Date().toISOString()
+        }
       })
     }
   }, [driverId, isConnected, sendMessage])
@@ -54,5 +57,6 @@ export function useLocationTracking(driverId?: string) {
     sendLocationUpdate,
     startLiveTracking,
     isConnected,
+    connectionStatus,
   }
 }

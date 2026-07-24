@@ -1,4 +1,6 @@
+// app/lib/api/tracking.ts
 import { TrackingData } from '../../types/tracking';
+import { Location } from '../../types';
 
 export async function fetchTrackingDetails(
   trackingNumber: string, 
@@ -54,54 +56,39 @@ function getMockTrackingData(trackingNumber: string): TrackingData {
   const deliveryDate = new Date(now);
   deliveryDate.setDate(deliveryDate.getDate() + 3);
 
+  // Helper function to create Location objects with proper structure
+  const createLocation = (
+    city: string, 
+    state: string, 
+    country: string, 
+    lat: number, 
+    lng: number,
+    address?: string
+  ): Location => {
+    return {
+      address: address || `${city}, ${state}`,
+      lat: lat,
+      lng: lng,
+      city: city,
+      state: state,
+      country: country,
+      coordinates: { lat, lng }
+    };
+  };
+
   return {
     trackingNumber,
     status: 'in_transit',
     estimatedDelivery: deliveryDate.toISOString(),
     lastUpdate: now.toISOString(),
-    currentLocation: {
-      city: 'Chicago',
-      state: 'IL',
-      country: 'USA',
-      coordinates: { lat: 41.8781, lng: -87.6298 }
-    }, // Changed from string to Location object
-    origin: {
-      city: 'New York',
-      state: 'NY',
-      country: 'USA',
-      coordinates: { lat: 40.7128, lng: -74.0060 }
-    },
-    destination: {
-      city: 'Los Angeles',
-      state: 'CA',
-      country: 'USA',
-      coordinates: { lat: 34.0522, lng: -118.2437 }
-    },
+    currentLocation: createLocation('Chicago', 'IL', 'USA', 41.8781, -87.6298, 'Chicago, IL'),
+    origin: createLocation('New York', 'NY', 'USA', 40.7128, -74.0060, 'New York, NY'),
+    destination: createLocation('Los Angeles', 'CA', 'USA', 34.0522, -118.2437, 'Los Angeles, CA'),
     route: [
-      { 
-        city: 'New York', 
-        state: 'NY', 
-        country: 'USA',
-        coordinates: { lat: 40.7128, lng: -74.0060 }
-      },
-      { 
-        city: 'Chicago', 
-        state: 'IL', 
-        country: 'USA',
-        coordinates: { lat: 41.8781, lng: -87.6298 }
-      },
-      { 
-        city: 'Denver', 
-        state: 'CO', 
-        country: 'USA',
-        coordinates: { lat: 39.7392, lng: -104.9903 }
-      },
-      { 
-        city: 'Los Angeles', 
-        state: 'CA', 
-        country: 'USA',
-        coordinates: { lat: 34.0522, lng: -118.2437 }
-      }
+      createLocation('New York', 'NY', 'USA', 40.7128, -74.0060, 'New York, NY'),
+      createLocation('Chicago', 'IL', 'USA', 41.8781, -87.6298, 'Chicago, IL'),
+      createLocation('Denver', 'CO', 'USA', 39.7392, -104.9903, 'Denver, CO'),
+      createLocation('Los Angeles', 'CA', 'USA', 34.0522, -118.2437, 'Los Angeles, CA')
     ],
     history: [
       {
@@ -188,6 +175,7 @@ function getMockTrackingData(trackingNumber: string): TrackingData {
     }
   };
 }
+
 // Optional: Fetch multiple tracking numbers
 export async function fetchMultipleTrackingDetails(
   trackingNumbers: string[]

@@ -1,13 +1,14 @@
+// app/tracking/page.tsx
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Search, QrCode, Filter } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Package, Search, Filter, ChevronDown } from 'lucide-react'
 import { ShipmentCard } from '../components/tracking/ShipmentCard'
-import { StatusTimeline } from '../components/tracking/StatusTimeline'
+import { Shipment } from '../types'
 
-// Mock data
-const shipments = [
+// Mock data with ALL required fields
+const mockShipments: Shipment[] = [
   {
     id: '1',
     trackingNumber: 'TRK789456123',
@@ -16,8 +17,31 @@ const shipments = [
     destination: { address: 'Customer Location, Boston', lat: 42.3601, lng: -71.0589 },
     estimatedDelivery: new Date(Date.now() + 86400000),
     driverId: 'driver1',
-    items: [{ name: 'Electronics Package', quantity: 1, weight: 5.2 }],
+    driverName: 'John Carter',
+    items: [{ 
+      id: 'item1',
+      name: 'Electronics Package', 
+      quantity: 1, 
+      weight: 5.2 
+    }],
     createdAt: new Date(Date.now() - 86400000),
+    updatedAt: new Date(Date.now() - 86400000),
+    priority: 'high',
+    totalWeight: 5.2,
+    customer: {
+      id: 'cust1',
+      name: 'John Doe',
+      email: 'john@example.com',
+      phone: '+1 (555) 123-4567',
+      address: 'Boston, MA'
+    },
+    payment: {
+      status: 'paid',
+      method: 'credit_card',
+      amount: 29.99
+    },
+    distance: 215,
+    estimatedDuration: 180,
   },
   {
     id: '2',
@@ -27,181 +51,215 @@ const shipments = [
     destination: { address: 'Office Building, San Francisco', lat: 37.7749, lng: -122.4194 },
     estimatedDelivery: new Date(Date.now() + 14400000),
     driverId: 'driver2',
-    items: [{ name: 'Documents', quantity: 1, weight: 0.5 }],
+    driverName: 'Sarah Miller',
+    items: [{ 
+      id: 'item2',
+      name: 'Documents', 
+      quantity: 1, 
+      weight: 0.5 
+    }],
     createdAt: new Date(Date.now() - 172800000),
+    updatedAt: new Date(Date.now() - 172800000),
+    priority: 'medium',
+    totalWeight: 0.5,
+    customer: {
+      id: 'cust2',
+      name: 'Jane Smith',
+      email: 'jane@example.com',
+      phone: '+1 (555) 987-6543',
+      address: 'San Francisco, CA'
+    },
+    payment: {
+      status: 'paid',
+      method: 'paypal',
+      amount: 14.99
+    },
+    distance: 383,
+    estimatedDuration: 240,
+  },
+  {
+    id: '3',
+    trackingNumber: 'TRK456789123',
+    status: 'delivered',
+    origin: { address: 'Warehouse B, Chicago', lat: 41.8781, lng: -87.6298 },
+    destination: { address: 'Residential, Miami', lat: 25.7617, lng: -80.1918 },
+    estimatedDelivery: new Date(Date.now() - 86400000),
+    driverId: 'driver3',
+    driverName: 'Robert Chen',
+    items: [{ 
+      id: 'item3',
+      name: 'Furniture', 
+      quantity: 2, 
+      weight: 35.0 
+    }],
+    createdAt: new Date(Date.now() - 259200000),
+    updatedAt: new Date(Date.now() - 86400000),
+    priority: 'medium',
+    totalWeight: 35.0,
+    customer: {
+      id: 'cust3',
+      name: 'Robert Johnson',
+      email: 'robert@example.com',
+      phone: '+1 (555) 456-7890',
+      address: 'Miami, FL'
+    },
+    payment: {
+      status: 'paid',
+      method: 'credit_card',
+      amount: 89.99
+    },
+    actualDelivery: new Date(Date.now() - 86400000),
+    distance: 1390,
+    estimatedDuration: 720,
+  },
+  {
+    id: '4',
+    trackingNumber: 'TRK321654987',
+    status: 'pending',
+    origin: { address: 'Distribution Center, Dallas', lat: 32.7767, lng: -96.7970 },
+    destination: { address: 'Retail Store, Seattle', lat: 47.6062, lng: -122.3321 },
+    estimatedDelivery: new Date(Date.now() + 259200000),
+    driverId: 'driver4',
+    driverName: 'Maria Garcia',
+    items: [{ 
+      id: 'item4',
+      name: 'Clothing', 
+      quantity: 5, 
+      weight: 25.0 
+    }],
+    createdAt: new Date(Date.now() - 43200000),
+    updatedAt: new Date(Date.now() - 43200000),
+    priority: 'low',
+    totalWeight: 25.0,
+    customer: {
+      id: 'cust4',
+      name: 'Fashion Retail Co',
+      email: 'orders@fashion.com',
+      phone: '+1 (555) 789-0123',
+      address: 'Seattle, WA'
+    },
+    payment: {
+      status: 'pending',
+      method: 'invoice',
+      amount: 199.99
+    },
+    distance: 2100,
+    estimatedDuration: 1440,
   },
 ]
 
 export default function TrackingPage() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedShipment, setSelectedShipment] = useState(shipments[0])
   const [filter, setFilter] = useState('all')
+  const [showFilters, setShowFilters] = useState(false)
 
-  const filteredShipments = shipments.filter(shipment => {
-    const matchesSearch = shipment.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         shipment.destination.address.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesFilter = filter === 'all' || shipment.status === filter
-    return matchesSearch && matchesFilter
-  })
+  const filteredShipments = mockShipments
+    .filter(shipment => {
+      const matchesSearch = 
+        shipment.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        shipment.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        shipment.destination.address.toLowerCase().includes(searchQuery.toLowerCase())
+      
+      const matchesFilter = filter === 'all' || shipment.status === filter
+      
+      return matchesSearch && matchesFilter
+    })
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Shipment Tracking
+            Track Shipments
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Track and manage all your shipments in real-time
+            Monitor and track all your shipments in real-time
           </p>
-        </motion.div>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Search and List */}
-          <div className="lg:col-span-2">
-            {/* Search and Filter */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6"
-            >
-              <div className="flex flex-col md:flex-row gap-4">
-                {/* Search Bar */}
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search by tracking number or destination..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
-                </div>
-
-                {/* Filter Buttons */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setFilter('all')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      filter === 'all'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => setFilter('in_transit')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      filter === 'in_transit'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    In Transit
-                  </button>
-                  <button
-                    onClick={() => setFilter('delivered')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      filter === 'delivered'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    Delivered
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Shipments List */}
-            <div className="space-y-4">
-              {filteredShipments.map((shipment, index) => (
-                <motion.div
-                  key={shipment.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <ShipmentCard 
-                    shipment={shipment}
-                  />
-                </motion.div>
-              ))}
+        {/* Search and Filters */}
+        <div className="mb-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search by tracking number, customer, or destination..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              />
+            </div>
+            
+            <div className="flex gap-3">
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="in_transit">In Transit</option>
+                <option value="out_for_delivery">Out for Delivery</option>
+                <option value="delivered">Delivered</option>
+                <option value="delayed">Delayed</option>
+              </select>
             </div>
           </div>
+        </div>
 
-          {/* Right Column - Shipment Details */}
-          <div>
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sticky top-8"
-            >
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-                Shipment Details
-              </h2>
-
-              {/* Selected Shipment Info */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-medium text-gray-900 dark:text-white">
-                    {selectedShipment.trackingNumber}
-                  </h3>
-                  <span className="px-3 py-1 text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
-                    {selectedShipment.status.replace('_', ' ')}
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">From</p>
-                    <p className="text-gray-900 dark:text-white">{selectedShipment.origin.address}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">To</p>
-                    <p className="text-gray-900 dark:text-white">{selectedShipment.destination.address}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Estimated Delivery</p>
-                    <p className="text-gray-900 dark:text-white">
-                      {selectedShipment.estimatedDelivery.toLocaleDateString()} at{' '}
-                      {selectedShipment.estimatedDelivery.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Timeline */}
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-4">Delivery Progress</h3>
-                <StatusTimeline 
-                  status={selectedShipment.status}
-                  estimatedDelivery={selectedShipment.estimatedDelivery}
+        {/* Shipments Grid */}
+        <AnimatePresence>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {filteredShipments.map((shipment, index) => (
+              <motion.div
+                key={shipment.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <ShipmentCard 
+                  shipment={shipment}
+                  onClick={() => {
+                    // Navigate to shipment details
+                    window.location.href = `/tracking/${shipment.trackingNumber}`
+                  }}
                 />
-              </div>
-
-              {/* Quick Actions */}
-              <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="font-medium text-gray-900 dark:text-white mb-4">Quick Actions</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                    <QrCode className="w-4 h-4" />
-                    View QR
-                  </button>
-                  <button className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                    <Filter className="w-4 h-4" />
-                    Update
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            ))}
           </div>
+        </AnimatePresence>
+
+        {/* Empty State */}
+        {filteredShipments.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-16"
+          >
+            <div className="mx-auto w-24 h-24 mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+              <Package className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              No shipments found
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              {searchQuery ? 'Try adjusting your search terms' : 'No shipments to display'}
+            </p>
+          </motion.div>
+        )}
+
+        {/* Stats Footer */}
+        <div className="mt-8 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm flex items-center justify-between">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            Showing {filteredShipments.length} of {mockShipments.length} shipments
+          </span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            Last updated: {new Date().toLocaleTimeString()}
+          </span>
         </div>
       </div>
     </div>

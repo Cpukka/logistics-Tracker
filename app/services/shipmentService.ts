@@ -1,5 +1,5 @@
-import { supabase, TABLES } from '@/lib/supabase'
-import { Shipment, CreateShipmentFormData, UpdateShipmentFormData } from '@/types'
+import { supabase, TABLES } from '../lib/supabase'
+import { Shipment, CreateShipmentFormData, UpdateShipmentFormData } from '../types'
 
 export class ShipmentService {
   static async getAll(filters?: {

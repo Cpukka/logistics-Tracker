@@ -19,6 +19,10 @@ export interface Location {
   state?: string;
   country?: string;
   postalCode?: string;
+  coordinates?: {  // Add this
+    lat: number;
+    lng: number;
+  };
 }
 
 // ============================================
@@ -133,6 +137,7 @@ export interface Driver {
   totalDeliveries?: number;
   totalDistance?: number; // in km
   joinedDate: Date;
+  updatedAt?: Date;
   licenseNumber?: string;
   profileImage?: string;
   currentRoute?: Route;

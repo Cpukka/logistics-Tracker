@@ -13,9 +13,10 @@ import {
   Trash2
 } from 'lucide-react'
 import { ShipmentCard } from '../components/tracking/ShipmentCard'
+import { Shipment } from '../types'
 
-// Mock data
-const shipments = [
+// Mock data with ALL required fields
+const shipments: Shipment[] = [
   {
     id: '1',
     trackingNumber: 'TRK789456123',
@@ -24,8 +25,32 @@ const shipments = [
     destination: { address: 'Customer Location, Boston', lat: 42.3601, lng: -71.0589 },
     estimatedDelivery: new Date(Date.now() + 86400000),
     driverId: 'driver1',
-    items: [{ name: 'Electronics Package', quantity: 1, weight: 5.2 }],
+    driverName: 'John Carter',
+    items: [{ 
+      id: 'item1',
+      name: 'Electronics Package', 
+      quantity: 1, 
+      weight: 5.2 
+    }],
     createdAt: new Date(Date.now() - 86400000),
+    updatedAt: new Date(Date.now() - 86400000),
+    priority: 'high',
+    totalWeight: 5.2,
+    customer: {
+      id: 'cust1',
+      name: 'John Doe',
+      email: 'john@example.com',
+      phone: '+1 (555) 123-4567',
+      address: 'Boston, MA'
+    },
+    payment: {
+      status: 'paid',
+      method: 'credit_card',
+      amount: 29.99
+    },
+    notes: 'Handle with care',
+    distance: 215,
+    estimatedDuration: 180,
   },
   {
     id: '2',
@@ -35,8 +60,31 @@ const shipments = [
     destination: { address: 'Office Building, San Francisco', lat: 37.7749, lng: -122.4194 },
     estimatedDelivery: new Date(Date.now() + 14400000),
     driverId: 'driver2',
-    items: [{ name: 'Documents', quantity: 1, weight: 0.5 }],
+    driverName: 'Sarah Miller',
+    items: [{ 
+      id: 'item2',
+      name: 'Documents', 
+      quantity: 1, 
+      weight: 0.5 
+    }],
     createdAt: new Date(Date.now() - 172800000),
+    updatedAt: new Date(Date.now() - 172800000),
+    priority: 'medium',
+    totalWeight: 0.5,
+    customer: {
+      id: 'cust2',
+      name: 'Jane Smith',
+      email: 'jane@example.com',
+      phone: '+1 (555) 987-6543',
+      address: 'San Francisco, CA'
+    },
+    payment: {
+      status: 'paid',
+      method: 'paypal',
+      amount: 14.99
+    },
+    distance: 383,
+    estimatedDuration: 240,
   },
   {
     id: '3',
@@ -46,8 +94,32 @@ const shipments = [
     destination: { address: 'Residential, Miami', lat: 25.7617, lng: -80.1918 },
     estimatedDelivery: new Date(Date.now() - 86400000),
     driverId: 'driver3',
-    items: [{ name: 'Furniture', quantity: 3, weight: 45.0 }],
+    driverName: 'Robert Chen',
+    items: [{ 
+      id: 'item3',
+      name: 'Furniture', 
+      quantity: 3, 
+      weight: 45.0 
+    }],
     createdAt: new Date(Date.now() - 259200000),
+    updatedAt: new Date(Date.now() - 86400000),
+    priority: 'medium',
+    totalWeight: 45.0,
+    customer: {
+      id: 'cust3',
+      name: 'Robert Johnson',
+      email: 'robert@example.com',
+      phone: '+1 (555) 456-7890',
+      address: 'Miami, FL'
+    },
+    payment: {
+      status: 'paid',
+      method: 'credit_card',
+      amount: 89.99
+    },
+    actualDelivery: new Date(Date.now() - 86400000),
+    distance: 1390,
+    estimatedDuration: 720,
   },
   {
     id: '4',
@@ -57,8 +129,31 @@ const shipments = [
     destination: { address: 'Retail Store, Seattle', lat: 47.6062, lng: -122.3321 },
     estimatedDelivery: new Date(Date.now() + 259200000),
     driverId: 'driver4',
-    items: [{ name: 'Clothing', quantity: 50, weight: 12.5 }],
+    driverName: 'Maria Garcia',
+    items: [{ 
+      id: 'item4',
+      name: 'Clothing', 
+      quantity: 50, 
+      weight: 12.5 
+    }],
     createdAt: new Date(Date.now() - 43200000),
+    updatedAt: new Date(Date.now() - 43200000),
+    priority: 'low',
+    totalWeight: 12.5,
+    customer: {
+      id: 'cust4',
+      name: 'Fashion Retail Co',
+      email: 'orders@fashion.com',
+      phone: '+1 (555) 789-0123',
+      address: 'Seattle, WA'
+    },
+    payment: {
+      status: 'pending',
+      method: 'invoice',
+      amount: 199.99
+    },
+    distance: 2100,
+    estimatedDuration: 1440,
   },
 ]
 
@@ -70,7 +165,8 @@ export default function ShipmentsPage() {
   const filteredShipments = shipments
     .filter(shipment => {
       const matchesSearch = shipment.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           shipment.destination.address.toLowerCase().includes(searchQuery.toLowerCase())
+                           shipment.destination.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           shipment.customer.name.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesFilter = filter === 'all' || shipment.status === filter
       return matchesSearch && matchesFilter
     })
@@ -105,6 +201,7 @@ export default function ShipmentsPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="flex items-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              onClick={() => window.location.href = '/shipments/new'}
             >
               <Plus className="w-5 h-5" />
               New Shipment
@@ -123,7 +220,7 @@ export default function ShipmentsPage() {
             <div className="flex-1">
               <input
                 type="text"
-                placeholder="Search shipments..."
+                placeholder="Search shipments by tracking number, customer, or destination..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
@@ -131,7 +228,7 @@ export default function ShipmentsPage() {
             </div>
 
             {/* Filters */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
@@ -183,24 +280,31 @@ export default function ShipmentsPage() {
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400"
+                      className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
                       title="View Details"
+                      onClick={() => window.location.href = `/shipments/${shipment.id}`}
                     >
                       <Eye className="w-5 h-5" />
                     </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      className="p-2 text-gray-600 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400"
+                      className="p-2 text-gray-600 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 transition-colors"
                       title="Edit"
+                      onClick={() => window.location.href = `/shipments/${shipment.id}/edit`}
                     >
                       <Edit className="w-5 h-5" />
                     </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                      className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                       title="Delete"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete this shipment?')) {
+                          console.log('Delete shipment:', shipment.id)
+                        }
+                      }}
                     >
                       <Trash2 className="w-5 h-5" />
                     </motion.button>

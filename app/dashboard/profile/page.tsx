@@ -32,10 +32,10 @@ import {
   Linkedin,
   Twitter,
   Github,
-  Package,    // Added
-  Truck,      // Added
-  Map,        // Added
-  Users       // Added
+  Package,
+  Truck,
+  Map,
+  Users
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
@@ -106,7 +106,10 @@ export default function ProfilePage() {
   const handleCancel = () => {
     setIsEditing(false)
     // Reset to original data if needed
-    toast.info('Changes discarded')
+    toast('Changes discarded', {
+      icon: 'ℹ️',
+      duration: 3000,
+    })
   }
 
   return (

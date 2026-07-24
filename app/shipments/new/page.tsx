@@ -133,7 +133,8 @@ export default function NewShipmentPage() {
   );
 }
 
-export const metadata = {
-  title: 'Create New Shipment | LogiTrack',
-  description: 'Create a new shipment for tracking and delivery',
-};
+// ❌ REMOVE THIS - metadata can't be exported from "use client" components
+// export const metadata = {
+//   title: 'Create New Shipment | LogiTrack',
+//   description: 'Create a new shipment for tracking and delivery',
+// };

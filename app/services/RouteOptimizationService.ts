@@ -1,4 +1,4 @@
-import { Shipment, Driver, RouteOptimizationRequest, OptimizedRoute } from '@/types'
+import { Shipment, Driver, RouteOptimizationRequest, OptimizedRoute } from '../types'
 
 export class RouteOptimizationService {
   static async optimizeRoutes(request: RouteOptimizationRequest): Promise<OptimizedRoute> {
@@ -16,19 +16,29 @@ export class RouteOptimizationService {
     const optimizedRoutes = await Promise.all(
       assignments.map(async (assignment) => {
         const route = await this.calculateOptimalRoute(assignment.shipments)
+        // Create the sequence array (order of shipment IDs)
+        const sequence = assignment.shipments.map((s, index) => index)
         return {
           driverId: assignment.driverId,
-          route,
           shipmentIds: assignment.shipments.map(s => s.id),
+          sequence: sequence,
+          route: route, // Add the route data here
         }
       })
     )
     
     // Calculate metrics
-    const metrics = this.calculateMetrics(optimizedRoutes)
+    const metrics = this.calculateMetrics(optimizedRoutes, shipments)
+    
+    // Get the first route for the main route property
+    const firstRoute = optimizedRoutes[0]?.route || { 
+      waypoints: [], 
+      distance: 0, 
+      estimatedDuration: 0 
+    }
     
     return {
-      route: optimizedRoutes[0]?.route,
+      route: firstRoute,
       assignments: optimizedRoutes,
       metrics,
     }
@@ -64,6 +74,63 @@ export class RouteOptimizationService {
     return groups
   }
 
+  private static assignToDrivers(
+    groupedShipments: Shipment[][], 
+    drivers: Driver[], 
+    constraints?: RouteOptimizationRequest['constraints']
+  ): Array<{ driverId: string; shipments: Shipment[] }> {
+    const assignments: Array<{ driverId: string; shipments: Shipment[] }> = []
+    
+    // Sort drivers by availability or rating
+    const availableDrivers = drivers.filter(d => d.status === 'available' || d.status === 'on_duty')
+    
+    // Simple assignment: each group goes to the nearest driver
+    groupedShipments.forEach((group) => {
+      if (availableDrivers.length === 0) {
+        // If no drivers available, assign to first driver
+        const driver = drivers[0]
+        if (driver) {
+          assignments.push({ driverId: driver.id, shipments: group })
+        }
+        return
+      }
+      
+      // Find the nearest driver for this group
+      const groupCenter = this.calculateCenter(group)
+      let bestDriver = availableDrivers[0]
+      let bestDistance = Infinity
+      
+      availableDrivers.forEach(driver => {
+        const distance = this.calculateDistance(
+          groupCenter,
+          driver.currentLocation
+        )
+        if (distance < bestDistance) {
+          bestDistance = distance
+          bestDriver = driver
+        }
+      })
+      
+      assignments.push({ driverId: bestDriver.id, shipments: group })
+    })
+    
+    return assignments
+  }
+
+  private static calculateCenter(shipments: Shipment[]): { lat: number; lng: number } {
+    if (shipments.length === 0) {
+      return { lat: 0, lng: 0 }
+    }
+    
+    const totalLat = shipments.reduce((sum, s) => sum + s.destination.lat, 0)
+    const totalLng = shipments.reduce((sum, s) => sum + s.destination.lng, 0)
+    
+    return {
+      lat: totalLat / shipments.length,
+      lng: totalLng / shipments.length,
+    }
+  }
+
   private static calculateDistance(loc1: { lat: number; lng: number }, loc2: { lat: number; lng: number }): number {
     // Haversine formula
     const R = 6371 // Earth's radius in km
@@ -85,6 +152,39 @@ export class RouteOptimizationService {
       distance: shipments.reduce((sum, s) => sum + (s.distance || 0), 0),
       estimatedDuration: shipments.reduce((sum, s) => sum + (s.estimatedDuration || 0), 0),
       polyline: '', // Encoded polyline from API
+    }
+  }
+
+  private static calculateMetrics(
+    optimizedRoutes: Array<{ driverId: string; shipmentIds: string[]; sequence: number[]; route: any }>, 
+    shipments: Shipment[]
+  ): {
+    totalDistance: number;
+    totalTime: number;
+    totalCost: number;
+    efficiency: number;
+    utilization: number;
+  } {
+    // Calculate total distance and time from routes
+    const totalDistance = optimizedRoutes.reduce((sum, r) => sum + (r.route?.distance || 0), 0)
+    const totalTime = optimizedRoutes.reduce((sum, r) => sum + (r.route?.estimatedDuration || 0), 0)
+    
+    // Calculate efficiency (higher is better)
+    const optimalDistance = shipments.reduce((sum, s) => sum + (s.distance || 0), 0)
+    const actualDistance = totalDistance
+    const efficiency = actualDistance > 0 ? Math.min((optimalDistance / actualDistance) * 100, 100) : 100
+    
+    // Calculate utilization (percentage of drivers used)
+    const usedDrivers = optimizedRoutes.filter(r => r.shipmentIds.length > 0).length
+    const totalDrivers = optimizedRoutes.length || 1
+    const utilization = totalDrivers > 0 ? (usedDrivers / totalDrivers) * 100 : 0
+    
+    return {
+      totalDistance,
+      totalTime,
+      totalCost: totalDistance * 0.5, // Mock cost calculation
+      efficiency: Math.min(efficiency, 100),
+      utilization,
     }
   }
 }

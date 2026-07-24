@@ -1,13 +1,14 @@
+// components/tracking/TrackingMap.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Location } from '../../types/tracking';
+import { Location } from '../../types';
 import { MapPin, Navigation, Route } from 'lucide-react';
 
 interface TrackingMapProps {
   origin: Location;
   destination: Location;
-  currentLocation: Location | string; // Allow string or Location object
+  currentLocation: Location | string;
   route: Location[];
 }
 
@@ -25,9 +26,12 @@ export default function TrackingMap({
       // Parse string like "Chicago, IL" into Location object
       const parts = currentLocation.split(',').map(part => part.trim());
       return {
+        address: currentLocation,
         city: parts[0] || 'Unknown',
         state: parts[1] || '',
         country: 'USA',
+        lat: 0,
+        lng: 0,
       };
     }
     return currentLocation;
@@ -35,16 +39,12 @@ export default function TrackingMap({
 
   const currentLoc = getCurrentLocation();
 
-  // In a real implementation, you would integrate with a mapping service
-  // like Google Maps, Mapbox, or Leaflet
   useEffect(() => {
-    // Simulate map loading
     const timer = setTimeout(() => setMapLoaded(true), 1000);
     return () => clearTimeout(timer);
   }, []);
 
   const getProgressPercentage = () => {
-    // Simple progress calculation based on route index
     const currentIndex = route.findIndex(loc => 
       loc.city === currentLoc.city && loc.state === currentLoc.state
     );
@@ -56,7 +56,6 @@ export default function TrackingMap({
 
   return (
     <div className="relative h-full">
-      {/* Mock Map Visualization */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-lg overflow-hidden">
         {!mapLoaded ? (
           <div className="flex items-center justify-center h-full">
@@ -88,7 +87,7 @@ export default function TrackingMap({
                   <MapPin className="h-4 w-4 text-white" />
                 </div>
                 <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm font-medium bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm">
-                  {origin.city}
+                  {origin.city || origin.address}
                 </div>
               </div>
             </div>
@@ -100,7 +99,7 @@ export default function TrackingMap({
                   <MapPin className="h-4 w-4 text-white" />
                 </div>
                 <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm font-medium bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm">
-                  {destination.city}
+                  {destination.city || destination.address}
                 </div>
               </div>
             </div>
@@ -118,7 +117,7 @@ export default function TrackingMap({
                     </div>
                   </div>
                   <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm font-medium bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm">
-                    {currentLoc.city}
+                    {currentLoc.city || currentLoc.address}
                   </div>
                 </div>
               </div>
@@ -180,15 +179,15 @@ export default function TrackingMap({
           <div className="space-y-1 text-sm">
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-              <span className="text-gray-700 dark:text-gray-300">Origin: {origin.city}, {origin.state}</span>
+              <span className="text-gray-700 dark:text-gray-300">Origin: {origin.city || origin.address}</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-              <span className="text-gray-700 dark:text-gray-300">Current: {currentLoc.city}</span>
+              <span className="text-gray-700 dark:text-gray-300">Current: {currentLoc.city || currentLoc.address}</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-red-600 rounded-full"></div>
-              <span className="text-gray-700 dark:text-gray-300">Destination: {destination.city}, {destination.state}</span>
+              <span className="text-gray-700 dark:text-gray-300">Destination: {destination.city || destination.address}</span>
             </div>
           </div>
         </div>

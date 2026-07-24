@@ -1,3 +1,6 @@
+// app/types/tracking.ts
+import { Location } from './index'
+
 export interface TrackingEvent {
   id: string;
   timestamp: string;
@@ -21,7 +24,7 @@ export interface TrackingData {
   status: TrackingStatus;
   estimatedDelivery: string;
   lastUpdate: string;
-  currentLocation: string | Location; // Allow both string and Location
+  currentLocation: string | Location;
   origin: Location;
   destination: Location;
   route: Location[];
@@ -35,16 +38,6 @@ export interface TrackingData {
   carrier: string;
   deliveryOptions: DeliveryOptions;
   pricing?: PricingInfo;
-}
-
-export interface Location {
-  city: string;
-  state: string;
-  country: string;
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
 }
 
 export interface PackageDetails {
