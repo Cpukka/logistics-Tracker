@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { Shipment, Driver } from '../../types'
 import { cn } from '../../lib/utils'
-import { Badge } from '../ui/Badge'
+import { Badge } from '../../components/ui/Badge'
 
 interface ActivityItem {
   id: string

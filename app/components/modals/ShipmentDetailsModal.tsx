@@ -24,10 +24,10 @@ import {
   ExternalLink
 } from 'lucide-react'
 import { Shipment } from '../../types'
-import { Button } from '../ui/Button'
-import { Badge } from '../ui/Badge'
+import { Button } from '../../components/ui/Button'
+import { Badge } from '../../components/ui/Badge'
 import { cn } from '../../lib/utils'
-import { Progress } from '../ui/Progress'
+import { Progress } from '../../components/ui/Progress'
 
 interface ShipmentDetailsModalProps {
   shipment: Shipment

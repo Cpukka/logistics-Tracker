@@ -1,7 +1,7 @@
 'use client';
 
 import { Package, Truck, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { Card, CardContent } from '../ui/Card';
+import { Card, CardContent } from '../../components/ui/Card';
 import { Shipment, Driver } from '../../types';
 
 interface StatsCardsProps {

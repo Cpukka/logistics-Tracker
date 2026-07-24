@@ -2,8 +2,8 @@
 
 import { Package, Clock, MapPin, User, AlertCircle, CheckCircle } from 'lucide-react';
 import { Shipment } from '../../types';
-import { Card, CardContent } from '../ui/Card';
-import { Badge } from '../ui/Badge';
+import { Card, CardContent } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
 
 interface ShipmentCardProps {
   shipment: Shipment;
